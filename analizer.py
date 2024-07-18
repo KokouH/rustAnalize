@@ -56,11 +56,11 @@ if __name__ == "__main__":
             item['high'] = high[1]
             item['month_sells'] = sum( i[2] for i in history )
 
-            out_file.write( json.dump(item) )
+            out_file.write( json.dumps(item) )
             out_file.flush()
 
         except Exception as e:
-            logger.error(f"{hash_name}")
+            logger.error(f"{hash_name} | {e}")
             time.sleep(60)
         finally:
             logger.info(f"{int(cur_ind / hashSize * 100)} % | {hash_name}")
