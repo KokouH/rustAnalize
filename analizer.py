@@ -11,6 +11,7 @@ url = f'https://steamcommunity.com/market/listings/{appid}/'
 # Calcualte BLOCK
 get_x = lambda history, as_int=False: [i[0] if not as_int else i[0].timestamp() - history[0][0].timestamp() for i in history]
 get_y = lambda history: [i[1] for i in history]
+get_z = lambda history: [i[2] for i in history]
 get_last_month = lambda history: [i for i in history[::-1] if (history[-1][0] - i[0]).total_seconds() < 86400 * 30 ][::-1]
 get_low_price = lambda history, percent=0.1: sorted(history, key=lambda m: m[1])[int(len(history) * percent)]
 get_high_price = lambda history, percent=0.9: sorted(history, key=lambda m: m[1])[int(len(history) * percent)]
@@ -18,6 +19,12 @@ get_high_price = lambda history, percent=0.9: sorted(history, key=lambda m: m[1]
 _get_z = lambda history: np.polyfit(np.array(get_x(history, True),), np.array(get_y(history), dtype=float), 1)
 _get_p = lambda history: np.poly1d(_get_z(history))
 get_trend = lambda history: _get_p(history)(get_x(history, True)[-1]) / _get_p(history)(0)
+
+_get_median = lambda arr: (sorted(arr))[len(arr) // 2]
+_get_seconds = lambda t: (datetime.datetime.now() - t).total_seconds()
+_seconds_in_range = lambda i, minimum, maximum: i >= minimum and i < maximum
+_get_day_sells = lambda history, day: sum( [i[2] for i in history if _seconds_in_range(_get_seconds(i[0]), 86400 * day, 86400 * (day + 1)) ] )
+get_splash_index = lambda history: max( get_z(history) ) / _get_median( get_z(history) )
 
 # Steam calls BLOCK
 #accessory funcs
@@ -49,12 +56,15 @@ if __name__ == "__main__":
             low = get_low_price(history)
             high = get_high_price(history)
             trend = get_trend(history)
+            splash = get_splash_index(history)
+            month_sells = sum( _get_z(history) )
 
             item['hash_name'] = hash_name
             item['trend'] = trend
             item['low'] = low[1]
             item['high'] = high[1]
-            item['month_sells'] = sum( i[2] for i in history )
+            item['month_sells'] = month_sells
+            item['splash'] = splash
 
             out_file.write( json.dumps(item) )
             out_file.flush()
